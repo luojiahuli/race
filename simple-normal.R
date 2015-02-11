@@ -23,6 +23,22 @@ show_image <- function(im) {
   image(1:19,1:19, t(apply(matrix(im,nrow=19,byrow = T), 1, rev)), col=gray((0:255)/255))
 }
 
-
+my_mvn <- function(data) {
+  library(doMC)
+  library(abind)
+  registerDoMC()
+  ret_val = list()
+  
+  mean = colSums(data) / nrow(data)
+  inner = foreach(i=1:nrow(data), .combine = function(...) abind(... , along = 1)) %dopar%  {
+    sample <- data[i,]
+    (sample - mean) %*% (t(sample - mean))
+  }
+  sum_inner = foreach(i=1:ncol(data), .combine = rbind) %dopar% colSums(inner[seq(i, nrow(data) * ncol(data), ncol(data)),])
+  sum_inner = sum_inner / nrow(data)
+  ret_val[["mean"]] = mean
+  ret_val[["covariance"]] = sum_inner
+  ret_val
+}
 
 
